@@ -36,14 +36,17 @@ Possui método de autenticação com JWT em cookie HTTP-only com criptografia de
 
 4. Inicialize o prisma:
 
-   ```npx prisma generate
    ```
-   ```npx prisma migrate deploy
+   npx prisma generate
+   ```
+   ```
+   npx prisma migrate deploy
    ```
 
 5. Inicie o servidor:
 
-   ```node app.js
+   ```
+   node app.js
    ```
 
 5. Acesse `http://localhost:5000`.
