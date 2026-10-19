@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerenciador de Tarefas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-200 p-4 text-base text-slate-800 md:p-6">
+  <header class="flex flex-wrap items-center justify-between gap-4 rounded-lg border-b border-slate-200 bg-white p-4">
+    <a class="flex items-center gap-2 text-lg font-bold text-slate-800 no-underline" href="/tarefas">
+      <img class="h-auto w-[70px]" src="/imagens/icon.png" alt="Logo do Gerenciador de Tarefas">
+    </a>
+
+    <form action="/tarefas" method="GET" class="flex w-full max-w-xl flex-1 gap-2">
+      <input class="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-200" type="search" name="busca" value="<%= busca %>" placeholder="Pesquisar tarefas...">
+      <input type="hidden" name="ordenacao" value="<%= ordenacao %>">
+      <input type="hidden" name="direcao" value="<%= direcao %>">
+      <input type="hidden" name="categoriaId" value="<%= filtroCategoria %>">
+      <button class="rounded-md bg-cyan-600 p-2 transition hover:bg-cyan-700" type="submit"><img src="/imagens/busca.png" class="h-auto w-[25px]" ></button>
+    </form>
+
+    <div class="flex items-center gap-3">
+      <strong><%= usuarioLogado.nome %></strong>
+      <a href="/editar-perfil" class="whitespace-nowrap rounded-md bg-cyan-600 p-2 no-underline transition hover:bg-cyan-700"><img src="/imagens/usuarioedit.png" class="h-auto w-[25px]" ></a>
+      <a href="/logout" class="whitespace-nowrap rounded-md bg-orange-600 p-2 no-underline transition hover:bg-orange-700"><img src="/imagens/logout.png" class="h-auto w-[25px]" ></a>
+    </div>
+  </header>
+
+  <main class="mx-auto my-7 w-full max-w-screen-2xl">
+    <% if (erro) { %>
+      <div class="mb-4 rounded-md border border-red-300 bg-red-400 px-4 py-3 text-sm text-red-800 transition-opacity duration-500" role="alert"><%= erro %></div>
+    <% } %>
+    <% if (sucesso) { %>
+      <div class="mb-4 rounded-md border border-green-300 bg-green-100 px-4 py-3 text-sm text-green-800 transition-opacity duration-500" role="status"><%= sucesso %></div>
+    <% } %>
+
+    <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
+      <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm lg:col-span-1">
+        <h1 class="mb-5 text-2xl font-bold text-slate-800">Adicionar tarefa</h1>
+        <form action="/tarefas" method="POST" class="flex flex-col gap-2">
+          <label class="font-semibold text-slate-700" for="novo-titulo">Título</label>
+          <input class="w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-200" id="novo-titulo" type="text" name="titulo" maxlength="200" value="<%= formulario.titulo %>" placeholder="O que você precisa fazer?" required>
+
+          <label class="mt-2 font-semibold text-slate-700" for="nova-descricao">Descrição</label>
+          <textarea class="h-32 w-full resize-y rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-200" id="nova-descricao" name="descricao" placeholder="Detalhes da tarefa..."><%= formulario.descricao %></textarea>
+
+          <span class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+              <label class="font-semibold text-slate-700" for="nova-prioridade">Prioridade</label>
+              <select class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-200" id="nova-prioridade" name="prioridade" required>
+                <option value="alta" <%= formulario.prioridade === 'alta' ? 'selected' : '' %>>Alta</option>
+                <option value="media" <%= formulario.prioridade === 'media' ? 'selected' : '' %>>Média</option>
+                <option value="baixa" <%= formulario.prioridade === 'baixa' ? 'selected' : '' %>>Baixa</option>
+              </select>
+            </span>
+
+            <span class="flex flex-1 flex-col gap-2">
+              <label class="font-semibold text-slate-700" for="nova-categoria">Categoria (opcional)</label>
+              <select class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-200" id="nova-categoria" name="categoriaId">
+                <option value="">Sem categoria</option>
+                <% categorias.forEach(categoria => { %>
+                  <option value="<%= categoria.id %>" <%= String(formulario.categoriaId || '') === String(categoria.id) ? 'selected' : '' %>><%= categoria.nome %></option>
+                <% }) %>
+              </select>
+            </span>
+          </span>
+          <button class="mt-3 self-start rounded-md bg-cyan-600 px-4 py-2 font-semibold text-white transition hover:bg-cyan-700" type="submit">Adicionar</button>
+        </form>
+      </section>
+
+      <section class="min-w-0 lg:col-span-2">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-bold text-slate-800">Minha lista</h2>
+            <p class="text-sm text-slate-500"><%= tarefas.length %> <%= tarefas.length === 1 ? 'tarefa' : 'tarefas' %></p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2" aria-label="Ordenar tarefas">
+            <form action="/tarefas" method="GET" class="flex items-center gap-2">
+              <input type="hidden" name="busca" value="<%= busca %>">
+              <input type="hidden" name="ordenacao" value="<%= ordenacao %>">
+              <input type="hidden" name="categoriaId" value="<%= filtroCategoria %>">
+              <label class="whitespace-nowrap text-sm text-slate-600" for="direcao-ordenacao">Ordem</label>
+              <select class="w-auto rounded-md border border-slate-300 bg-white px-2 py-2 text-sm outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-200" id="direcao-ordenacao" name="direcao" aria-label="Ordem crescente ou decrescente" onchange="this.form.submit()">
+                <option value="desc" <%= direcao === 'desc' ? 'selected' : '' %>>Decrescente</option>
+                <option value="asc" <%= direcao === 'asc' ? 'selected' : '' %>>Crescente</option>
+              </select>
+            </form>
+            <span class="text-sm text-slate-600">Organizar por:</span>
+            <form action="/tarefas" method="GET">
+              <input type="hidden" name="busca" value="<%= busca %>">
+              <input type="hidden" name="direcao" value="<%= direcao %>">
+              <input type="hidden" name="categoriaId" value="<%= filtroCategoria %>">
+              <button type="submit" name="ordenacao" value="prioridade" class="rounded-md border px-3 py-2 text-sm font-semibold transition <%= ordenacao === 'prioridade' ? 'border-blue-700 bg-cyan-600 text-white' : 'border-slate-300 bg-white text-slate-700 hover:border-blue-600 hover:text-blue-700' %>">Prioridade</button>
+            </form>
+            <form action="/tarefas" method="GET">
+              <input type="hidden" name="busca" value="<%= busca %>">
+              <input type="hidden" name="direcao" value="<%= direcao %>">
+              <input type="hidden" name="categoriaId" value="<%= filtroCategoria %>">
+              <button type="submit" name="ordenacao" value="alfabetica" class="rounded-md border px-3 py-2 text-sm font-semibold transition <%= ordenacao === 'alfabetica' ? 'border-blue-700 bg-cyan-600 text-white' : 'border-slate-300 bg-white text-slate-700 hover:border-blue-600 hover:text-blue-700' %>">A–Z</button>
+            </form>
+            <form action="/tarefas" method="GET">
+              <input type="hidden" name="busca" value="<%= busca %>">
+              <input type="hidden" name="ordenacao" value="data">
+              <input type="hidden" name="direcao" value="<%= direcao %>">
+              <input type="hidden" name="categoriaId" value="<%= filtroCategoria %>">
+              <button type="submit" class="rounded-md border px-3 py-2 text-sm font-semibold transition <%= ordenacao === 'data' ? 'border-blue-700 bg-cyan-600 text-white' : 'border-slate-300 bg-white text-slate-700 hover:border-blue-600 hover:text-blue-700' %>">Data</button>
+            </form>
+          </div>
+        </div>
+        
+        <form action="/tarefas" method="GET" class="mb-4 flex flex-wrap items-center gap-2">
+          <a href="/categorias" class="rounded-md bg-cyan-600 px-3 py-2 no-underline transition hover:bg-cyan-700" title="Gerenciar categorias"><img src="/imagens/categorias.png" class="h-auto w-[20px]"></a>
+          <input type="hidden" name="busca" value="<%= busca %>">
+          <input type="hidden" name="ordenacao" value="<%= ordenacao %>">
+          <input type="hidden" name="direcao" value="<%= direcao %>">
+          <label class="text-sm font-semibold text-slate-700" for="filtro-categoria">Filtrar por categoria</label>
+          <select class="w-auto min-w-40 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-200" id="filtro-categoria" name="categoriaId" onchange="this.form.submit()">
+            <option value="" <%= filtroCategoria === '' ? 'selected' : '' %>>Todas</option>
+            <option value="sem-categoria" <%= filtroCategoria === 'sem-categoria' ? 'selected' : '' %>>Sem categoria</option>
+            <% categorias.forEach(categoria => { %>
+              <option value="<%= categoria.id %>" <%= filtroCategoria === String(categoria.id) ? 'selected' : '' %>><%= categoria.nome %></option>
+            <% }) %>
+          </select>
+        </form>
+
+        <div class="flex flex-col gap-3">
+          <% if (tarefas.length === 0) { %>
+            <p class="rounded-lg border border-dashed border-slate-300 bg-white p-7 text-center text-slate-500"><%= busca || filtroCategoria ? 'Nenhuma tarefa corresponde aos filtros.' : 'Você ainda não tem tarefas.' %></p>
+          <% } else { %>
+            <% tarefas.forEach(tarefa => { %>
+              <article class="flex flex-col items-start justify-between gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center">
+                <div class="flex w-full items-start gap-4 sm:items-center">
+                  <span style="height: stretch; width: 20px;" class="rounded-md text-xs font-bold <%= tarefa.prioridade === 'alta' ? 'bg-red-400 text-red-800' : tarefa.prioridade === 'media' ? 'bg-amber-400 text-amber-800' : 'bg-lime-400 text-green-800' %>">
+                    <form action="/tarefas/<%= tarefa.id %>/conclusao?_method=PATCH" method="POST">
+                      <label class="flex cursor-pointer items-center gap-2 whitespace-nowrap text-sm text-slate-700">
+                        <input class="h-5 w-5 accent-green-600/0" type="checkbox" name="concluida" value="true" <%= tarefa.concluida ? 'checked' : '' %> onchange="this.form.submit()">
+                      </label>
+                    </form>
+                  </span>
+                  <div class="min-w-0">
+                    <div class="mb-2 flex flex-wrap items-center gap-2">
+                      <h3 class="break-words text-base font-semibold text-slate-800 <%= tarefa.concluida ? 'text-slate-500 line-through' : '' %>"><%= tarefa.titulo %></h3>
+                      <% if (tarefa.categoria) { %>
+                        <span class="rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold text-cyan-800"><%= tarefa.categoria.nome %></span>
+                      <% } %>
+                    </div>
+                    <% if (tarefa.descricao) { %>
+                      <p style="overflow-wrap: anywhere;" class="mb-2 text-slate-600"><%= tarefa.descricao %></p>
+                    <% } %>
+                    <time class="text-sm text-slate-500" datetime="<%= tarefa.criadaEm.toISOString() %>">Criada em <%= tarefa.criadaEm.toLocaleString('pt-BR') %></time>
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
+                  <div class="flex flex-col gap-2">
+                    <a class="flex h-9 w-9 items-center justify-center rounded-md bg-cyan-600 p-2 transition hover:bg-cyan-700" href="/tarefas/<%= tarefa.id %>/editar" title="Editar tarefa">
+                      <img class="h-4 w-4" src="/imagens/edit.png" alt="">
+                    </a>
+                    <form action="/tarefas/<%= tarefa.id %>?_method=DELETE" method="POST" onsubmit="return confirm('Deseja realmente excluir esta tarefa?')">
+                      <button type="submit" class="flex h-9 w-9 items-center justify-center rounded-md bg-orange-600 p-2 transition hover:bg-orange-700" title="Excluir tarefa">
+                        <img class="h-4 w-4" src="/imagens/delete.png" alt="">
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </article>
+            <% }) %>
+          <% } %>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script>
+    document.querySelectorAll('[role="alert"], [role="status"]').forEach((aviso) => {
+      window.setTimeout(() => {
+        aviso.classList.add('opacity-0');
+        window.setTimeout(() => aviso.remove(), 500);
+      }, 2000);
+    });
+  </script>
+</body>
+</html>

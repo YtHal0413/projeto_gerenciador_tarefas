@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Usuario {
+  id      Int      @id @default(autoincrement())
+  nome    String
+  email   String   @unique
+  senha   String
+  tarefas Tarefa[]
+  categorias Categoria[]
+}
+
+model Categoria {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  usuarioId Int
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  tarefas   Tarefa[]
+
+  @@unique([usuarioId, nome])
+}
+
+model Tarefa {
+  id         Int      @id @default(autoincrement())
+  titulo     String
+  descricao  String   @default("")
+  prioridade String   @default("media")
+  concluida  Boolean  @default(false)
+  criadaEm   DateTime @default(now())
+  usuarioId  Int
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  categoriaId Int?
+  categoria  Categoria? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+
+  @@index([usuarioId, criadaEm])
+  @@index([categoriaId])
+}

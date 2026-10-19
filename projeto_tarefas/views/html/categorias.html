@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerenciar categorias</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-200 p-4 text-base text-slate-800 md:p-6">
+  <header class="flex flex-wrap items-center justify-between gap-4 rounded-lg border-b border-slate-200 bg-white p-4">
+    <a class="flex items-center gap-2 text-lg font-bold text-slate-800 no-underline" href="/tarefas">
+      <img class="h-auto w-[70px]" src="/imagens/icon.png" alt="Logo do Gerenciador de Tarefas">
+    </a>
+    <div class="flex items-center gap-3">
+      <strong><%= usuarioLogado.nome %></strong>
+      <a href="/tarefas" class="whitespace-nowrap rounded-md bg-cyan-600 px-4 py-2 font-semibold text-white no-underline transition hover:bg-cyan-700">Voltar às tarefas</a>
+    </div>
+  </header>
+
+  <main class="mx-auto my-8 w-full max-w-3xl">
+    <section class="mb-6 rounded-xl border border-slate-200 bg-white p-6 shadow-lg md:p-8">
+      <h1 class="mb-2 text-2xl font-bold text-slate-800">Gerenciar categorias</h1>
+      <p class="mb-6 text-slate-600">Organize suas tarefas em grupos diferentes!</p>
+
+      <% if (erro) { %>
+        <div class="mb-5 rounded-md border border-red-300 bg-red-100 px-4 py-3 text-sm text-red-800" role="alert"><%= erro %></div>
+      <% } %>
+      <% if (sucesso) { %>
+        <div class="mb-5 rounded-md border border-green-300 bg-green-100 px-4 py-3 text-sm text-green-800" role="status"><%= sucesso %></div>
+      <% } %>
+
+      <form action="/categorias" method="POST" class="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div class="flex flex-1 flex-col gap-2">
+          <label class="font-semibold text-slate-700" for="nova-categoria">Título da categoria</label>
+          <input class="w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-200" type="text" id="nova-categoria" name="nome" maxlength="50" value="<%= categoriaNome %>" placeholder="Ex.: Trabalho, Estudos, Pessoal" required>
+        </div>
+        <button type="submit" class="rounded-md bg-cyan-600 px-4 py-2 font-semibold text-white transition hover:bg-cyan-700">Criar</button>
+      </form>
+    </section>
+
+    <section class="flex flex-col gap-3">
+      <h2 class="text-xl font-bold text-slate-800">Suas categorias (<%= categorias.length %>)</h2>
+      <% if (categorias.length === 0) { %>
+        <p class="rounded-lg border border-dashed border-slate-300 bg-white p-7 text-center text-slate-500">Você ainda não criou categorias.</p>
+      <% } else { %>
+        <% categorias.forEach(categoria => { %>
+          <article class="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 class="font-semibold text-slate-800"><%= categoria.nome %></h3>
+              <p class="text-sm text-slate-500"><%= categoria._count.tarefas %> <%= categoria._count.tarefas === 1 ? 'tarefa associada' : 'tarefas associadas' %></p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <details class="relative">
+                <summary class="cursor-pointer list-none rounded-md bg-cyan-600 px-4 py-2 text-center font-semibold text-white transition hover:bg-cyan-700">Renomear</summary>
+                <form action="/categorias/<%= categoria.id %>?_method=PUT" method="POST" class="mt-2 flex min-w-64 flex-col gap-2 rounded-md border border-slate-200 bg-white p-3 shadow-lg sm:absolute sm:right-0 sm:z-10">
+                  <label class="text-sm font-semibold text-slate-700" for="categoria-<%= categoria.id %>">Novo nome</label>
+                  <input class="w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-200" type="text" id="categoria-<%= categoria.id %>" name="nome" maxlength="50" value="<%= categoria.nome %>" required>
+                  <button type="submit" class="rounded-md bg-cyan-600 px-4 py-2 font-semibold text-white transition hover:bg-cyan-700">Salvar</button>
+                </form>
+              </details>
+              <form action="/categorias/<%= categoria.id %>?_method=DELETE" method="POST" onsubmit="return confirm('Excluir esta categoria? As tarefas associadas serão mantidas sem categoria.')">
+                <button type="submit" class="rounded-md bg-orange-600 px-4 py-2 font-semibold text-white transition hover:bg-orange-700">Excluir</button>
+              </form>
+            </div>
+          </article>
+        <% }) %>
+      <% } %>
+    </section>
+  </main>
+  <script>
+    document.querySelectorAll('[role="alert"], [role="status"]').forEach((aviso) => {
+      window.setTimeout(() => {
+        aviso.classList.add('opacity-0');
+        window.setTimeout(() => aviso.remove(), 500);
+      }, 2000);
+    });
+  </script>
+</body>
+</html>
